@@ -30,7 +30,7 @@ def cv(model_name, model, x_train, y_train, threshold=0.5):
         
         precision_list.append(metrics.precision_score(y_test_cv, pred))
         recall_list.append(metrics.recall_score(y_test_cv, pred))
-        f1_list.append(metrics.recall_score(y_test_cv, pred))
+        f1_list.append(metrics.f1_score(y_test_cv, pred, average='micro'))
         i+=1
         
     print(f'{model_name}\nF1 : {np.round(np.mean(f1_list),2)} +/- {np.round(np.std(f1_list),2)}\n Precision : {np.round(np.mean(precision_list),2)} +/- {np.round(np.std(precision_list),2)}\nRecall : {np.round(np.mean(recall_list),2)} +/- {np.round(np.std(recall_list),2)}\n')
