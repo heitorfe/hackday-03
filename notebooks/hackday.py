@@ -23,13 +23,13 @@ def encodes_obrigatorios(df, teste=True):
     return df
 
 
-def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensemble=False):
+def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensemble=False, n_splits=5):
     
     precision_list = []
     recall_list = []
     f1_list = []
 
-    skf = ms.StratifiedKFold(n_splits=5, shuffle=True, random_state=5)
+    skf = ms.StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=5)
     i =1
     for train_index, test_index in skf.split(x_train, y_train):
         print(f'{i}/5')
@@ -45,8 +45,8 @@ def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensembl
          # prediction
         if ensemble == False:
             proba = model.predict_proba(x_test_cv)
-
             pred = (proba[:,1]>threshold).astype(int)
+            
         else:
             pred = model.predict(x_test_cv)
         
@@ -55,7 +55,7 @@ def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensembl
         f1_list.append(metrics.f1_score(y_test_cv, pred, average='micro'))
         i+=1
         
-    print(f'F1 : {np.mean(f1_list)} +/- {np.std(f1_list)}/nPrecision : {np.mean(precision_list)} +/- {np.std(precision_list)}\nRecall : {np.mean(recall_list)} +/- {np.std(recall_list)}\n')
+    print(f'F1 : {np.mean(f1_list)} +/- {np.std(f1_list)}\nPrecision : {np.mean(precision_list)} +/- {np.std(precision_list)}\nRecall : {np.mean(recall_list)} +/- {np.std(recall_list)}\n')
     
 def load_data():
 
@@ -115,8 +115,11 @@ def data_preparation_test(df):
     df[num_cols]=mms.fit_transform(df[num_cols])
     return df
 
-def generate_submission(df_test,cols_selected, model):
+def generate_submission(df_test, model ,cols_selected= None):
 
+    if cols_selected ==None:
+        cols_selected = df_test.drop('id_cliente', axis=1).columns
+    
     X_submission = df_test[cols_selected]
     pred = model.predict(X_submission)
 
@@ -124,6 +127,7 @@ def generate_submission(df_test,cols_selected, model):
     submission = pd.DataFrame()
     submission.loc[:, 'id_cliente'] = df_test['id_cliente']
     submission.loc[:, 'limite_adicional'] = pred
+    submission['limite_adicional'] = submission['limite_adicional'].map({1: 'Conceder', 0: 'Negar'})
     submission.to_csv('../data/submission.csv', index=False)
     print('Congratulations! Submission created!')
     
