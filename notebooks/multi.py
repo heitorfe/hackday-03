@@ -11,8 +11,8 @@ from sklearn.metrics import f1_score
 from matplotlib import pyplot as plt
 from multiprocessing import Process
 import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 import hackday
 import fine_tuning
@@ -38,12 +38,11 @@ if __name__ == "__main__":
     # outlier treatment
     df = hackday.outlier_treatment(df_raw)
 
-    df = hackday.feature_engineering(df)
+#     df = hackday.feature_engineering(df)
 
     df = hackday.data_preparation_train(df)
 
-    X = df[cols_selected]
-    # .drop(['id_cliente', 'limite_adicional'], axis=1)
+    X = df.drop(['id_cliente', 'limite_adicional'], axis=1)
     y = df['limite_adicional']
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8)
@@ -51,15 +50,23 @@ if __name__ == "__main__":
 
     procs = []
 
-    proc = Process(target=fine_tuning.tuning_rf, args=(X_train, X_test, y_train, y_test, 10,))
+    proc = Process(target=fine_tuning.tuning_rf, args=(X_train, X_test, y_train, y_test, 50,))
     procs.append(proc)
     proc.start()
 
-    proc = Process(target=fine_tuning.tuning_ada, args=(X_train, X_test, y_train, y_test,10,))
+    proc = Process(target=fine_tuning.tuning_ada, args=(X_train, X_test, y_train, y_test,50,))
     procs.append(proc)
     proc.start()
 
-    proc = Process(target=fine_tuning.tuning_lgbm, args=(X_train, X_test, y_train, y_test,10,))
+    proc = Process(target=fine_tuning.tuning_lgbm, args=(X_train, X_test, y_train, y_test,50,))
+    procs.append(proc)
+    proc.start()
+    
+    proc = Process(target=fine_tuning.tuning_et, args=(X_train, X_test, y_train, y_test,50,))
+    procs.append(proc)
+    proc.start()
+    
+    proc = Process(target=fine_tuning.tuning_xgb, args=(X_train, X_test, y_train, y_test,50,))
     procs.append(proc)
     proc.start()
 

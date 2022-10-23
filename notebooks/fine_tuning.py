@@ -24,14 +24,15 @@ def tuning_rf(X_train, X_test, y_train, y_test, K=10):
         min_samples_split = random.choice([2,3,4,5])
         min_child_weight = random.choice(np.arange(0.001,0.003,0.0005))
         min_samples_leaf = random.choice([1,2,3])
-        n_estimators = random.choice(np.arange(200,300,50))
+        n_estimators = random.choice(np.arange(200,1000,100))
     #     n_estimators = random.choice(np.arange(100,200,10))
 
 
         model = RandomForestClassifier(n_estimators = n_estimators,
                               max_depth =max_depth ,
                               min_samples_leaf=min_samples_leaf,
-                              min_samples_split=min_samples_split)
+                              min_samples_split=min_samples_split,
+                              class_weight={0:1 ,1:10})
 
         model.fit(X_train, y_train)
         threshold = hackday.optimal_threshold(model, X_test, y_test)
@@ -59,7 +60,7 @@ def tuning_lgbm(X_train, X_test, y_train, y_test, K=10):
         num_leaves = random.choice(np.arange(70,90,5))
         max_depth = random.choice(np.arange(50,150,20))
         min_child_weight = random.choice(np.arange(0.001,0.003,0.0005))
-        n_estimators = random.choice(np.arange(50,300,50))
+        n_estimators = random.choice(np.arange(50,500,50))
         boosting_type = 'gbdt'
     #     n_estimators = random.choice(np.arange(100,200,10))
 
@@ -94,7 +95,7 @@ def tuning_ada(X_train, X_test, y_train, y_test, K=10):
     for i in range(10):
 
         learning_rate = random.choice(np.arange(1.0,1.5,0.005))
-        n_estimators = random.choice(np.arange(50,300,50))
+        n_estimators = random.choice(np.arange(50,500,50))
         algorithm = random.choice(['SAMME', 'SAMME.R'])
     #     n_estimators = random.choice(np.arange(100,200,10))
 
@@ -118,3 +119,79 @@ def tuning_ada(X_train, X_test, y_train, y_test, K=10):
         print(count)
         results_ada.sort_values('f1', ascending=False).to_pickle('./tunning/ada.pkl')
     return results_ada.sort_values('f1', ascending=False)
+
+def tuning_et(X_train, X_test, y_train, y_test, K=10):
+    results_et = pd.DataFrame()
+    count = 0
+
+    for i in range(K):
+        max_depth = random.choice(np.arange(50,150,20))
+        criterion = random.choice(['gini', 'entropy'])
+        min_samples_leaf = random.choice([1,2,3])
+        min_samples_split = random.choice([2,3,4,5])
+        n_estimators = random.choice(np.arange(100,1000,100))
+
+        model = ExtraTreesClassifier(
+        max_depth = max_depth, 
+        n_estimators=n_estimators,
+        criterion=criterion,
+        min_samples_leaf=min_samples_leaf,
+        min_samples_split=min_samples_split,
+        random_state=42,
+        class_weight={0:1 ,1:10})
+
+        model.fit(X_train, y_train)
+        threshold = hackday.optimal_threshold(model, X_test, y_test)
+        f1 =  hackday.cross_validation('et', model, X_train, y_train, threshold=threshold, ensemble=False)
+
+        results_et.loc[count, 'f1'] = f1
+        results_et.loc[count, 'threshold'] = threshold
+        results_et.loc[count, 'n_estimators'] = n_estimators
+        results_et.loc[count, 'max_depth'] = max_depth
+        results_et.loc[count, 'criterion'] = criterion
+        results_et.loc[count, 'min_samples_leaf'] = min_samples_leaf
+        results_et.loc[count, 'min_samples_split'] = min_samples_split
+
+        count+=1
+        print(count)
+        results_et.sort_values('f1', ascending=False).to_pickle('./tunning/et.pkl')
+    return results_et.sort_values('f1', ascending=False)
+
+
+def tuning_xgb(X_train, X_test, y_train, y_test, K=10):
+    results_xgb = pd.DataFrame()
+    count = 0
+
+    for i in range(K):
+        n_estimators = random.choice(np.arange(100,1000,100))
+        max_depth = random.choice(np.arange(3,10,1))
+        subsample = random.choice(np.arange(0.7,0.9,0.02))
+        colsample_bytree = random.choice(np.arange(0,1,0.01))
+        gamma = random.choice([1,2,3])
+
+        
+
+        model = XGBClassifier(
+        max_depth = max_depth, 
+        n_estimators=n_estimators,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
+        gamma=gamma,
+        random_state=42)
+
+        model.fit(X_train, y_train)
+        threshold = hackday.optimal_threshold(model, X_test, y_test)
+        f1 =  hackday.cross_validation('xgb', model, X_train, y_train, threshold=threshold, ensemble=False)
+
+        results_xgb.loc[count, 'f1'] = f1
+        results_xgb.loc[count, 'threshold'] = threshold
+        results_xgb.loc[count, 'n_estimators'] = n_estimators
+        results_xgb.loc[count, 'max_depth'] = max_depth
+        results_xgb.loc[count, 'subsample'] = subsample
+        results_xgb.loc[count, 'colsample_bytree'] = colsample_bytree
+        results_xgb.loc[count, 'gamma'] = gamma
+
+        count+=1
+        print(count)
+        results_xgb.sort_values('f1', ascending=False).to_pickle('./tunning/xgb.pkl')
+    return results_xgb.sort_values('f1', ascending=False)
