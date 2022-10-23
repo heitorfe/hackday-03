@@ -143,6 +143,17 @@ def plot_cm(model, X_test, y_test):
 
     pred = model.predict(X_test)
     skplt.metrics.plot_confusion_matrix(y_test, pred);
+    
+def optimal_threshold(model, X_test, y_test):
+    proba = model.predict_proba(X_test)[:,1]
+    thresholds = np.arange(0.5, 0.9, 0.01)
+
+    f1_list = []
+    for threshold in thresholds:
+        f1_list.append(f1_score(y_test, (proba>threshold).astype(int), average='micro'))
+    print(f'Best threshold: {thresholds[np.argmax(f1_list)]}')
+    
+    return thresholds[np.argmax(f1_list)]
 
 
 
