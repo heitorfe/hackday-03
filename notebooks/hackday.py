@@ -32,7 +32,7 @@ def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensembl
     skf = ms.StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=5)
     i =1
     for train_index, test_index in skf.split(x_train, y_train):
-        print(f'{i}/5')
+#         print(f'{i}/5')
         x_train_cv = x_train.iloc[train_index]
         y_train_cv = y_train.iloc[train_index]
         
@@ -56,7 +56,9 @@ def cross_validation(model_name, model, x_train, y_train, threshold=0.5, ensembl
         i+=1
         
     print(f'F1 : {np.mean(f1_list)} +/- {np.std(f1_list)}\nPrecision : {np.mean(precision_list)} +/- {np.std(precision_list)}\nRecall : {np.mean(recall_list)} +/- {np.std(recall_list)}\n')
-    
+    return np.mean(f1_list)
+
+
 def load_data():
 
     path = '../data/train.csv'
@@ -115,13 +117,17 @@ def data_preparation_test(df):
     df[num_cols]=mms.fit_transform(df[num_cols])
     return df
 
-def generate_submission(df_test, model ,cols_selected= None):
+def generate_submission(df_test, model ,cols_selected= None, threshold=None):
 
     if cols_selected ==None:
         cols_selected = df_test.drop('id_cliente', axis=1).columns
     
     X_submission = df_test[cols_selected]
-    pred = model.predict(X_submission)
+    if threshold:
+        proba = model.predict_proba(X_submission)[:,1]
+        pred = (proba>=threshold).astype(int)
+    else:
+        pred = model.predict(X_submission)
 
 
     submission = pd.DataFrame()
@@ -150,7 +156,7 @@ def optimal_threshold(model, X_test, y_test):
 
     f1_list = []
     for threshold in thresholds:
-        f1_list.append(f1_score(y_test, (proba>threshold).astype(int), average='micro'))
+        f1_list.append(metrics.f1_score(y_test, (proba>threshold).astype(int), average='micro'))
     print(f'Best threshold: {thresholds[np.argmax(f1_list)]}')
     
     return thresholds[np.argmax(f1_list)]
